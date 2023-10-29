@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react';
-import { addStuApi } from "../api/stuApi";
-import { useNavigate, useParams } from "react-router-dom";
-import { getStuByIdApi, editStuByIdApi } from "../api/stuApi";
+import {useState, useEffect} from 'react';
+import {useNavigate, useParams} from "react-router-dom";
+import {getStuByIdApi} from "../api/stuApi";
+import {addStuAsync, editStuByIdAsync} from "../redux/stuSlice";
+import {useDispatch, useSelector} from "react-redux";
 
 /**
  * 该组件有两个功能，一个是添加学生，另一个是修改学生
- * @param {*} props 
- * @returns 
+ * @param {*} props
+ * @returns
  */
 function AddOrEdit(props) {
 
 
     const navigate = useNavigate();
-
+    const dispatch = useDispatch();
+    const {stuList} = useSelector(state => state.stu);
     // 后期我们就根据是否有 id 来决定是添加还是修改
-    const { id } = useParams();
+    const {id} = useParams();
 
     // 创建一个表单状态
     const [stu, setStu] = useState({
@@ -31,11 +33,13 @@ function AddOrEdit(props) {
     useEffect(() => {
         // 如果有 id，我们需要根据该 id 获取学生的详细信息，并且回填到表单里面
         if (id) {
-            getStuByIdApi(id).then(({ data }) => {
-                setStu(data);
-            })
+            // getStuByIdApi(id).then(({data}) => {
+            //     setStu(data);
+            // })
+            const curStu = stuList.filter(stu => stu.id === ~~id);
+            setStu(curStu[0]);
         }
-    }, [id])
+    }, [id, stuList])
 
 
     function updateStuInfo(newInfo, key) {
@@ -44,7 +48,7 @@ function AddOrEdit(props) {
             return;
         }
 
-        const newStuInfo = { ...stu };
+        const newStuInfo = {...stu};
         newStuInfo[key] = newInfo.trim();
         setStu(newStuInfo);
     }
@@ -60,26 +64,23 @@ function AddOrEdit(props) {
         }
 
         if (id) {
-            // 编辑
-            editStuByIdApi(id, stu).then(()=>{
-                navigate("/home", {
-                    state: {
-                        alert: "学生修改成功",
-                        type: "info",
-                    }
-                });
-            })
+            dispatch(editStuByIdAsync({id, stu}));
+
+            navigate("/home", {
+                state: {
+                    alert: "学生修改成功",
+                    type: "info",
+                }
+            });
         } else {
-            // 接下来就需要发送请求
-            addStuApi(stu).then(() => {
-                // 需要做跳转
-                navigate("/home", {
-                    state: {
-                        alert: "学生添加成功",
-                        type: "success",
-                    }
-                });
-            })
+
+            dispatch(addStuAsync(stu));
+            navigate("/home", {
+                state: {
+                    alert: "学生添加成功",
+                    type: "success",
+                }
+            });
         }
     }
 
